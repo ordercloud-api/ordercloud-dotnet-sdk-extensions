@@ -64,17 +64,20 @@ namespace OrderCloud.Integrations.DataMovement
 				// data load into temp keys is done. the rest is quick key swaps, do them all transactionally.
 
 				resetPrevious = resetPrevious ?? (stateId != await db.StringGetAsync(CurrIdKey).ConfigureAwait(false));
+				resetPrevious = resetPrevious.Value
+				                && await db.KeyExistsAsync(CurrIdKey)
+				                && await db.KeyExistsAsync(CurrDataKey);
 
-				var tran = GetDb().CreateTransaction();
-				if (resetPrevious == true) {
-					// move current to previous
-					await tran.KeyRenameAsync(CurrIdKey, PrevIdKey).ConfigureAwait(false);
-					await tran.KeyRenameAsync(CurrDataKey, PrevDataKey).ConfigureAwait(false);
-				}
-				// move temp to current
-				await tran.KeyRenameAsync(TempIdKey, CurrIdKey).ConfigureAwait(false);
-				await tran.KeyRenameAsync(TempDataKey, CurrDataKey).ConfigureAwait(false);
-				await tran.ExecuteAsync().ConfigureAwait(false);
+				await GetDb().TransactAsync(q => {
+					if (resetPrevious == true) {
+						// move current to previous
+						q.Enqueue(tran => tran.KeyRenameAsync(CurrIdKey, PrevIdKey));
+						q.Enqueue(tran => tran.KeyRenameAsync(CurrDataKey, PrevDataKey));
+					}
+					// move temp to current
+					q.Enqueue(tran => tran.KeyRenameAsync(TempIdKey, CurrIdKey));
+					q.Enqueue(tran => tran.KeyRenameAsync(TempDataKey, CurrDataKey));
+				});
 			}
 			finally {
 				// if any temp keys are hanging around, clean them up
@@ -87,12 +90,9 @@ namespace OrderCloud.Integrations.DataMovement
 		/// Overwrite "previous" set with "current" set. Seldom needed; LoadCurrentDataAsync with resetPreviousData=true handles this for typical scheduled jobs.
 		/// </summary>
 		/// <returns></returns>
-		public async Task MoveCurrentToPreviousAsync() {
-			var tran = GetDb().CreateTransaction();
-			await tran.KeyRenameAsync(CurrIdKey, PrevIdKey).ConfigureAwait(false);
-			await tran.KeyRenameAsync(CurrDataKey, PrevDataKey).ConfigureAwait(false);
-			await tran.ExecuteAsync().ConfigureAwait(false);
-		}
+		public Task MoveCurrentToPreviousAsync() => GetDb().TransactAsync(q => q
+			.Enqueue(tran => tran.KeyRenameAsync(CurrIdKey, PrevIdKey))
+			.Enqueue(tran => tran.KeyRenameAsync(CurrDataKey, PrevDataKey)));
 
 		/// <summary>
 		/// Compares sets and returns all rows in "current" and not "previous".
@@ -110,6 +110,20 @@ namespace OrderCloud.Integrations.DataMovement
 		private string CurrIdKey => $"{DataKeyPrefix}:current:id";
 		private string PrevIdKey => $"{DataKeyPrefix}:previous:id";
 		private string TempIdKey => $"{DataKeyPrefix}:temp:id";
+
+		/// <summary>
+		/// Wipe out all "current" and "previous" data from the cache
+		/// </summary>
+		public Task ClearAllAsync() {
+			var db = GetDb();
+			return Task.WhenAll(
+				db.KeyDeleteAsync(CurrDataKey),
+				db.KeyDeleteAsync(PrevDataKey),
+				db.KeyDeleteAsync(TempDataKey),
+				db.KeyDeleteAsync(CurrIdKey),
+				db.KeyDeleteAsync(PrevIdKey),
+				db.KeyDeleteAsync(TempIdKey));
+		}
 
 		private async Task<IList<string>> GetSetDffAsync(string key1, string key2) {
 			var values = await GetDb().SetCombineAsync(SetOperation.Difference, new[] { (RedisKey)key1, (RedisKey)key2 }).ConfigureAwait(false);
@@ -183,4 +197,30 @@ namespace OrderCloud.Integrations.DataMovement
 	}
 
 	public enum ChangeType { Create, Update, Delete }
+
+	// https://stackoverflow.com/a/48814292/62600
+	public static class RedisExtensions
+	{
+		public class RedisCommandQueue
+		{
+			private readonly ITransaction _tran;
+			private readonly IList<Task> _tasks = new List<Task>();
+
+			internal RedisCommandQueue(ITransaction tran) => _tran = tran;
+			internal Task CompleteAsync() => Task.WhenAll(_tasks);
+
+			public RedisCommandQueue Enqueue(Func<ITransaction, Task> cmd) {
+				_tasks.Add(cmd(_tran));
+				return this;
+			}
+		}
+
+		public static async Task TransactAsync(this IDatabase db, Action<RedisCommandQueue> addCommands) {
+			var tran = db.CreateTransaction();
+			var q = new RedisCommandQueue(tran);
+			addCommands(q);
+			if (await tran.ExecuteAsync())
+				await q.CompleteAsync();
+		}
+	}
 }
