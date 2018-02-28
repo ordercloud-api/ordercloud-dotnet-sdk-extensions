@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using StackExchange.Redis;
 
-namespace OrderCloud.Integrations.DataMovement
+namespace OrderCloud.DataMovement
 {
 	/// <summary>
 	/// Useful for comparing 2 large sets of raw source data (strings), one representing "current" data and one representing "previous" data, and quickly identifying

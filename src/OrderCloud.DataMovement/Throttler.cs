@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OrderCloud.Integrations.DataMovement
+namespace OrderCloud.DataMovement
 {
 	/// <summary>
 	/// Helper class for throttling concurrent async tasks.

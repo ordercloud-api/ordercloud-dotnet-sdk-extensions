@@ -5,9 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using NUnit.Framework;
-using OrderCloud.Integrations.DataMovement;
 
-namespace OrderCloud.Integrations.Tests.DataMovement
+namespace OrderCloud.DataMovement.Tests
 {
 	/// <summary>
 	/// You must run a local instance of Redis in order to run these tests.
