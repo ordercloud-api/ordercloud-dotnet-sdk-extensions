@@ -1,5 +1,5 @@
-# OrderCloud .NET SDK Extensions
-A set of opinionated libraries for building .NET solutions that integrate with the OrderCloud.id e-commerce platform.
+# OrderCloud.io .NET SDK Extensions
+A set of opinionated libraries for building .NET solutions that integrate with the OrderCloud.io e-commerce platform.
 
 ## OrderCloud.AzureApp
 
