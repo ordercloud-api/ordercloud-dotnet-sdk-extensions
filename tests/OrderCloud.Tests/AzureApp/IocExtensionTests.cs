@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using NUnit.Framework;
 
 namespace OrderCloud.AzureApp.Tests
@@ -14,25 +12,25 @@ namespace OrderCloud.AzureApp.Tests
 	{
 		[Test]
 		public void can_register_services_by_convention_without_namespace() {
-			var container = Substitute.For<IServiceCollection>();
+			var container = new ServiceCollection();
 
 			container.AddByConvention(this.GetType().Assembly);
 
-			container.Received(3).Add(Arg.Any<ServiceDescriptor>());
-			container.Received(1).Add(Arg.Is<ServiceDescriptor>(d => d.ServiceType == typeof(MyServices.ISrv1) && d.ImplementationType == typeof(MyServices.Srv1)));
-			container.Received(1).Add(Arg.Is<ServiceDescriptor>(d => d.ServiceType == typeof(MyServices.ISrv2) && d.ImplementationType == typeof(MyServices.Srv2)));
-			container.Received(1).Add(Arg.Is<ServiceDescriptor>(d => d.ServiceType == typeof(MyOtherServices.ISrv4) && d.ImplementationType == typeof(MyOtherServices.Srv4)));
+			container.Should().HaveCount(3);
+			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv1) && s.ImplementationType == typeof(MyServices.Srv1));
+			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv2) && s.ImplementationType == typeof(MyServices.Srv2));
+			container.Should().Contain(s => s.ServiceType == typeof(MyOtherServices.ISrv4) && s.ImplementationType == typeof(MyOtherServices.Srv4));
 		}
 
 		[Test]
 		public void can_register_services_by_convention_with_namespace() {
-			var container = Substitute.For<IServiceCollection>();
+			var container = new ServiceCollection();
 
 			container.AddByConvention(this.GetType().Assembly, "OrderCloud.AzureApp.Tests.MyServices");
 
-			container.Received(2).Add(Arg.Any<ServiceDescriptor>());
-			container.Received(1).Add(Arg.Is<ServiceDescriptor>(d => d.ServiceType == typeof(MyServices.ISrv1) && d.ImplementationType == typeof(MyServices.Srv1)));
-			container.Received(1).Add(Arg.Is<ServiceDescriptor>(d => d.ServiceType == typeof(MyServices.ISrv2) && d.ImplementationType == typeof(MyServices.Srv2)));
+			container.Should().HaveCount(2);
+			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv1) && s.ImplementationType == typeof(MyServices.Srv1));
+			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv2) && s.ImplementationType == typeof(MyServices.Srv2));
 		}
 	}
 
