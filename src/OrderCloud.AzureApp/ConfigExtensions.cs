@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace OrderCloud.AzureApp
 {
-	public static class IocExtensions
+	public static class ConfigExtensions
 	{
 		/// <summary>
 		/// Register all services in a given assembly and (optionally) namespace by naming convention: IMyService -> MyService

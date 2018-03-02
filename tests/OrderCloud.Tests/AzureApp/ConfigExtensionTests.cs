@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace OrderCloud.AzureApp.Tests
 {
 	[TestFixture]
-	public class IocExtensionTests
+	public class ConfigExtensionTests
 	{
 		[Test]
 		public void can_register_services_by_convention_without_namespace() {
