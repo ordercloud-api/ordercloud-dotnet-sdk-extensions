@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Text;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace OrderCloud.AzureApp
 {
@@ -26,6 +28,22 @@ namespace OrderCloud.AzureApp
 				services.AddTransient(m.iface, m.impl);
 
 			return services;
+		}
+
+		/// <summary>
+		/// Binds your appsettings.json file (or other config source, such as App Settings in the Azure portal) to the AppSettings class
+		/// so values can be accessed in a strongly typed manner. Call in your Program.cs off of WebHost.CreateDefaultBuilder(args).
+		/// If called before UseStartup, then AppSettings can be injected into your Startup class.
+		/// </summary>
+		public static IWebHostBuilder UseAppSettings<TAppSettings>(this IWebHostBuilder hostBuilder) where TAppSettings : class, new() {
+			return hostBuilder.ConfigureServices((ctx, services) => {
+				// https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/options
+				services.Configure<TAppSettings>(ctx.Configuration);
+
+				// Breaks from the Options pattern (link above) by allowing AppSettings to be injected directly
+				// into services, rather than injecting IOptions<AppSettings>.
+				services.AddTransient(sp => sp.GetService<IOptionsSnapshot<TAppSettings>>().Value);
+			});
 		}
 	}
 }
