@@ -14,7 +14,7 @@ namespace OrderCloud.AzureApp.Tests
 		public void can_register_services_by_convention_without_namespace() {
 			var container = new ServiceCollection();
 
-			container.AddByConvention(this.GetType().Assembly);
+			container.AddServicesByConvention(this.GetType().Assembly);
 
 			container.Should().HaveCount(3);
 			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv1) && s.ImplementationType == typeof(MyServices.Srv1));
@@ -26,7 +26,7 @@ namespace OrderCloud.AzureApp.Tests
 		public void can_register_services_by_convention_with_namespace() {
 			var container = new ServiceCollection();
 
-			container.AddByConvention(this.GetType().Assembly, "OrderCloud.AzureApp.Tests.MyServices");
+			container.AddServicesByConvention(this.GetType().Assembly, "OrderCloud.AzureApp.Tests.MyServices");
 
 			container.Should().HaveCount(2);
 			container.Should().Contain(s => s.ServiceType == typeof(MyServices.ISrv1) && s.ImplementationType == typeof(MyServices.Srv1));

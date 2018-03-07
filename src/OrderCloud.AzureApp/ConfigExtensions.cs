@@ -14,7 +14,7 @@ namespace OrderCloud.AzureApp
 		/// </summary>
 		/// <param name="asm">Assembly to scan for interfaces and implementations.</param>
 		/// <param name="namespace">Namespace to scan for interfaces (otional).</param>
-		public static IServiceCollection AddByConvention(this IServiceCollection services, Assembly asm, string @namespace = null) {
+		public static IServiceCollection AddServicesByConvention(this IServiceCollection services, Assembly asm, string @namespace = null) {
 			var mappings =
 				from impl in asm.GetTypes()
 				let iface = impl.GetInterface($"I{impl.Name}")
