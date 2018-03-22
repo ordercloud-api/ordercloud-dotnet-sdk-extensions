@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <Version>0.1.0</Version>
+	  <Version>0.1.1</Version>
 
 	  <PackageId>OrderCloud.AzureApp</PackageId>
 	  <Title>OrderCloud SDK Extensions for Azure App Services</Title>
@@ -19,9 +19,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.0.3" />
+	  <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="2.0.3" />
+	  <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.0.2" />
+	  <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="2.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.0.1" />
+    <PackageReference Include="OrderCloud.SDK" Version="0.4.0" />
     <PackageReference Include="Serilog" Version="2.6.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="5.2.1" />
   </ItemGroup>
 
 </Project>
