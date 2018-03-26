@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,15 +34,14 @@ namespace OrderCloud.AzureApp
 		}
 
 		/// <summary>
-		/// Call AFTER AddMvc (in Startup.ConfigureServices). Use only if you have a single URL that responds to multiple webhooks. This will
-		/// allow you to add the same [Route] attribute to several action methods and this middleware will disambiguate based on payload type.
-		/// For example, if you have an action method with a [FromBody] parameter of type WebhookPayloads.Orders.Submit, then order submit
-		/// webhooks will be correctly routed to this method.
+		/// Chain to AddMvc() (typically in Startup.ConfigureServices) if you want to respond to multiple webhooks from a single URL.
+		/// This allows you to add the same [Route] attribute to several action methods, and it will will choose the correct one
+		/// based on payload type. For example, if you have an action method with a [FromBody] parameter of type WebhookPayloads.Orders.Submit,
+		/// then order submit webhooks will be correctly routed to this method.
 		/// </summary>
-		public static IServiceCollection AddWebhookDispatcher(this IServiceCollection services) {
-			services.AddSingleton<IActionSelector, WebhookActionSelector>();
-			//services.AddSingleton<ActionSelector>();
-			return services;
+		public static IMvcBuilder DisambiguateWebhooks(this IMvcBuilder builder) {
+			builder.Services.AddSingleton<IActionSelector, WebhookActionSelector>();
+			return builder;
 		}
 
 		/// <summary>
@@ -57,6 +58,22 @@ namespace OrderCloud.AzureApp
 				// into services, rather than injecting IOptions<AppSettings>.
 				services.AddTransient(sp => sp.GetService<IOptionsSnapshot<TAppSettings>>().Value);
 			});
+		}
+
+		/// <summary>
+		/// Chain to services.AddAuthentication() (typically in Startup.ConfigureServices) to enable authenticating by passing a valid
+		/// OrderCloud access token in the Authorization header. Add [OrderCloudUserAuth] attribute to specific controllers or actions
+		/// where this should be enforced. Typical use case is custom endpoints for front-end user apps.
+		/// </summary>
+		public static AuthenticationBuilder AddOrderCloudUser(this AuthenticationBuilder builder, Action<OrderCloudUserAuthOptions> configureOptions) {
+			return builder.AddScheme<OrderCloudUserAuthOptions, OrderCloudUserAuthHandler>("OrderCloudUser", null, configureOptions);
+		}
+
+		/// <summary>
+		/// Call inside of services.AddAuthorization(...) (typically in Startup.ConfigureServices) to enable validation of incoming webhooks.
+		/// </summary>
+		public static AuthenticationBuilder AddOrderCloudWebhooks(this AuthenticationBuilder builder, Action<OrderCloudWebhookAuthOptions> configureOptions) {
+			return builder.AddScheme<OrderCloudWebhookAuthOptions, OrderCloudWebhookAuthHandler>("OrderCloudWebhook", null, configureOptions);
 		}
 	}
 }

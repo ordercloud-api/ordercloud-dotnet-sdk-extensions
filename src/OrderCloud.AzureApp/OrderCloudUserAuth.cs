@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -14,11 +13,21 @@ using OrderCloud.SDK;
 
 namespace OrderCloud.AzureApp
 {
-	public class OrderCloudUserAuthHandler : AuthenticationHandler<OrderCloudAuthOptions>
+	/// <summary>
+	/// Apply to controllers or actions to require that a valid OrderCloud access token is provided in the Authorization heaader.
+	/// </summary>
+	public class OrderCloudUserAuthAttribute : AuthorizeAttribute
+	{
+		public OrderCloudUserAuthAttribute() {
+			AuthenticationSchemes = "OrderCloudUser";
+		}
+	}
+
+	public class OrderCloudUserAuthHandler : AuthenticationHandler<OrderCloudUserAuthOptions>
 	{
 		private readonly IOrderCloudClient _ocClient;
 
-		public OrderCloudUserAuthHandler(IOptionsMonitor<OrderCloudAuthOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IOrderCloudClient ocClient)
+		public OrderCloudUserAuthHandler(IOptionsMonitor<OrderCloudUserAuthOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock, IOrderCloudClient ocClient)
 			: base(options, logger, encoder, clock)
 		{
 			_ocClient = ocClient;
@@ -73,30 +82,16 @@ namespace OrderCloud.AzureApp
 		}
 	}
 
-	public class OrderCloudAuthOptions : AuthenticationSchemeOptions
+	public class OrderCloudUserAuthOptions : AuthenticationSchemeOptions
 	{
 		public List<string> ValidClientIDs { get; set; } = new List<string>();
 
-		public OrderCloudAuthOptions ValidForClientIDs(params string[] clientIDs) {
+		/// <summary>
+		/// Enforce that only tokens associated with specific OrderCloud client ID(s) are allowed to access endpoints marked with [OrderCloudUserAuth].
+		/// </summary>
+		public OrderCloudUserAuthOptions AddValidClientIDs(params string[] clientIDs) {
 			ValidClientIDs.AddRange(clientIDs);
 			return this;
-		}
-	}
-
-	public static class OrderCloudAuthExtensions
-	{
-		public static AuthenticationBuilder AddOrderCloud(this AuthenticationBuilder builder, Action<OrderCloudAuthOptions> configureOptions) {
-			return builder.AddScheme<OrderCloudAuthOptions, OrderCloudUserAuthHandler>("OrderCloudUser", null, configureOptions);
-		}
-	}
-
-	/// <summary>
-	/// Apply to controllers or actions to require that a valid OrderCloud access token is provided in the Authorization heaader.
-	/// </summary>
-	public class OrderCloudUserAuthAttribute : AuthorizeAttribute
-	{
-		public OrderCloudUserAuthAttribute() {
-			AuthenticationSchemes = "OrderCloudUser";
 		}
 	}
 }

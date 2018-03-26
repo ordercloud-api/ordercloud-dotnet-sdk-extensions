@@ -21,15 +21,15 @@ namespace OrderCloud.TestWebApi
 
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public virtual void ConfigureServices(IServiceCollection services) {
+			services.AddAuthentication()
+				.AddOrderCloudUser(opts => opts.AddValidClientIDs("myclientid"))
+				.AddOrderCloudWebhooks(opts => opts.HashKey = "myhashkey");
+
 			services
 				.AddMvc()
+				.DisambiguateWebhooks()
 				// don't mess with casing https://github.com/aspnet/Announcements/issues/194
 				.AddJsonOptions(opts => opts.SerializerSettings.ContractResolver = new DefaultContractResolver());
-
-			services.AddAuthentication()
-				.AddOrderCloud(opts => opts.ValidForClientIDs("myclientid"));
-
-			services.AddWebhookDispatcher();
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -8,6 +9,7 @@ using Flurl.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using OrderCloud.AzureApp.Testing;
@@ -52,9 +54,16 @@ namespace OrderCloud.Tests.AzureApp
 				ConfigData = new { Foo = "blah" }
 			};
 
+			//var json = JsonConvert.SerializeObject(payload);
+			//var keyBytes = Encoding.UTF8.GetBytes("myhashkey");
+			//var dataBytes = Encoding.UTF8.GetBytes(json);
+			//var hash = new HMACSHA256(keyBytes).ComputeHash(dataBytes);
+			//var base64 = Convert.ToBase64String(hash);
+
 			dynamic resp = await CreateServer()
 				.CreateFlurlClient()
 				.Request("test/webhook")
+				.WithHeader("X-oc-hash", "4NPw1O9AviSOC1A3C+HqkDutRLNwyABneY/3M2OqByE=")
 				.PostJsonAsync(payload)
 				.ReceiveJson();
 

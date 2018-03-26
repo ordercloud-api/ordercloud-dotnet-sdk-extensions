@@ -18,7 +18,7 @@ namespace SampleApp.WebApi.Controllers
 		[HttpGet("anon")]
 		public object GetWithoutAuth() => "hello wide open!";
 
-		[Route("webhook")]
+		[Route("webhook"), OrderCloudWebhookAuth]
 		public object HandleAddressSave([FromBody] WebhookPayloads.Addresses.Save<MyConfigData> payload) {
 			return new {
 				Action = "HandleAddressSave",
@@ -27,7 +27,7 @@ namespace SampleApp.WebApi.Controllers
 			};
 		}
 
-		[Route("webhook")]
+		[Route("webhook"), OrderCloudWebhookAuth]
 		public object HandleGenericWebhook([FromBody] WebhookPayload payload) {
 			return new {
 				Action = "HandleGenericWebhook",
