@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -27,6 +28,18 @@ namespace OrderCloud.AzureApp
 			foreach (var m in mappings)
 				services.AddTransient(m.iface, m.impl);
 
+			return services;
+		}
+
+		/// <summary>
+		/// Call AFTER AddMvc (in Startup.ConfigureServices). Use only if you have a single URL that responds to multiple webhooks. This will
+		/// allow you to add the same [Route] attribute to several action methods and this middleware will disambiguate based on payload type.
+		/// For example, if you have an action method with a [FromBody] parameter of type WebhookPayloads.Orders.Submit, then order submit
+		/// webhooks will be correctly routed to this method.
+		/// </summary>
+		public static IServiceCollection AddWebhookDispatcher(this IServiceCollection services) {
+			services.AddSingleton<IActionSelector, WebhookActionSelector>();
+			//services.AddSingleton<ActionSelector>();
 			return services;
 		}
 
