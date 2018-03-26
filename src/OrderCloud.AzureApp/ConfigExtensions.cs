@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -31,6 +34,17 @@ namespace OrderCloud.AzureApp
 		}
 
 		/// <summary>
+		/// Chain to AddMvc() (typically in Startup.ConfigureServices) if you want to respond to multiple webhooks from a single URL.
+		/// This allows you to add the same [Route] attribute to several action methods, and it will will choose the correct one
+		/// based on payload type. For example, if you have an action method with a [FromBody] parameter of type WebhookPayloads.Orders.Submit,
+		/// then order submit webhooks will be correctly routed to this method.
+		/// </summary>
+		public static IMvcBuilder DisambiguateWebhooks(this IMvcBuilder builder) {
+			builder.Services.AddSingleton<IActionSelector, WebhookActionSelector>();
+			return builder;
+		}
+
+		/// <summary>
 		/// Binds your appsettings.json file (or other config source, such as App Settings in the Azure portal) to the AppSettings class
 		/// so values can be accessed in a strongly typed manner. Call in your Program.cs off of WebHost.CreateDefaultBuilder(args).
 		/// If called before UseStartup, then AppSettings can be injected into your Startup class.
@@ -44,6 +58,22 @@ namespace OrderCloud.AzureApp
 				// into services, rather than injecting IOptions<AppSettings>.
 				services.AddTransient(sp => sp.GetService<IOptionsSnapshot<TAppSettings>>().Value);
 			});
+		}
+
+		/// <summary>
+		/// Chain to services.AddAuthentication() (typically in Startup.ConfigureServices) to enable authenticating by passing a valid
+		/// OrderCloud access token in the Authorization header. Add [OrderCloudUserAuth] attribute to specific controllers or actions
+		/// where this should be enforced. Typical use case is custom endpoints for front-end user apps.
+		/// </summary>
+		public static AuthenticationBuilder AddOrderCloudUser(this AuthenticationBuilder builder, Action<OrderCloudUserAuthOptions> configureOptions) {
+			return builder.AddScheme<OrderCloudUserAuthOptions, OrderCloudUserAuthHandler>("OrderCloudUser", null, configureOptions);
+		}
+
+		/// <summary>
+		/// Call inside of services.AddAuthorization(...) (typically in Startup.ConfigureServices) to enable validation of incoming webhooks.
+		/// </summary>
+		public static AuthenticationBuilder AddOrderCloudWebhooks(this AuthenticationBuilder builder, Action<OrderCloudWebhookAuthOptions> configureOptions) {
+			return builder.AddScheme<OrderCloudWebhookAuthOptions, OrderCloudWebhookAuthHandler>("OrderCloudWebhook", null, configureOptions);
 		}
 	}
 }
