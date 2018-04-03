@@ -23,7 +23,6 @@ namespace OrderCloud.AzureApp.Testing
 
 		    return new JwtSecurityTokenHandler().WriteToken(token);
 	    }
-		
 
 	    public static IFlurlClient WithFakeOrderCloudToken(this IFlurlClient fc, string clientId) {
 		    return fc.WithOAuthBearerToken(Create(clientId));

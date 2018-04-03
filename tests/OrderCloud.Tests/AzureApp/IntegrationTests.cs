@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Flurl.Http;
+using Flurl.Http.Configuration;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using OrderCloud.AzureApp.Testing;
@@ -89,6 +89,26 @@ namespace OrderCloud.Tests.AzureApp
 				oc.Me.GetAsync(Arg.Any<string>()).Returns(new MeUser { Username = "joe" });
 				services.AddSingleton(oc);
 			}
+		}
+	}
+
+	public static class TestServerExtensions
+	{
+		public static IFlurlClient CreateFlurlClient(this TestServer server) {
+			var fc = new FlurlClient(server.BaseAddress.AbsoluteUri);
+			fc.Settings.HttpClientFactory = new TestServerHttpClientFactory(server);
+			return fc;
+		}
+
+		private class TestServerHttpClientFactory : DefaultHttpClientFactory
+		{
+			private readonly TestServer _server;
+
+			public TestServerHttpClientFactory(TestServer server) {
+				_server = server;
+			}
+
+			public override HttpClient CreateHttpClient(HttpMessageHandler handler) => _server.CreateClient();
 		}
 	}
 }
