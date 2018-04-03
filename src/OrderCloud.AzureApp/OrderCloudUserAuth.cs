@@ -45,7 +45,7 @@ namespace OrderCloud.AzureApp
 				var clientID = jwt.Claims.FirstOrDefault(x => x.Type == "cid")?.Value;
 				if (clientID == null)
 					return AuthenticateResult.Fail("The provided bearer token does not contain a 'cid' (Client ID) claim.");
-				if (!Options.ValidClientIDs.Contains(clientID))
+				if (!Options.ValidClientIDs.Contains(clientID, StringComparer.InvariantCultureIgnoreCase))
 					return AuthenticateResult.Fail("Client ID from token is not valid for this integration.");
 
 				// we've validated the token as much as we can on this end, go make sure it's ok on OC

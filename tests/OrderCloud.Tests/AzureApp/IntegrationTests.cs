@@ -38,11 +38,23 @@ namespace OrderCloud.Tests.AzureApp
 			var result = await CreateServer()
 				.CreateFlurlClient()
 				.AllowAnyHttpStatus()
-				.WithFakeOrderCloudToken("myclientid")
+				.WithFakeOrderCloudToken("mYcLiEnTiD") // check should be case insensitive
 				.Request("test/auth")
 				.GetStringAsync();
 
 			result.Should().Be("hello protected!");
+		}
+
+		[Test]
+		public async Task should_deny_access_with_incorrect_client_id() {
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.WithFakeOrderCloudToken("wrongid")
+				.Request("test/auth")
+				.GetAsync();
+
+			resp.StatusCode.Should().Be(401);
 		}
 
 		[Test]
