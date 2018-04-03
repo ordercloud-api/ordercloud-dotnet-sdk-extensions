@@ -18,6 +18,10 @@
 	  <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\OrderCloud.AzureApp.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.3" />
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.0.3" />
