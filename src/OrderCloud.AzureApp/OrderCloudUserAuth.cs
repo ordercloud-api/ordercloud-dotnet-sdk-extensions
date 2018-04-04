@@ -18,8 +18,11 @@ namespace OrderCloud.AzureApp
 	/// </summary>
 	public class OrderCloudUserAuthAttribute : AuthorizeAttribute
 	{
-		public OrderCloudUserAuthAttribute() {
+		/// <param name="roles">Optional list of roles. If provided, user must have just one of them, otherwise authorization fails.</param>
+		public OrderCloudUserAuthAttribute(params ApiRole[] roles) {
 			AuthenticationSchemes = "OrderCloudUser";
+			if (roles.Any())
+				Roles = string.Join(",", roles);
 		}
 	}
 
@@ -55,6 +58,8 @@ namespace OrderCloud.AzureApp
 				cid.AddClaim(new Claim("clientid", clientID));
 				cid.AddClaim(new Claim("accesstoken", token));
 				cid.AddClaim(new Claim("username", user.Username));
+				cid.AddClaims(user.AvailableRoles.Select(r => new Claim(ClaimTypes.Role, r)));
+
 				var anon = jwt.Claims.FirstOrDefault(x => x.Type == "orderid");
 				if (anon != null)
 					cid.AddClaim(new Claim("anonorderid", anon.Value));

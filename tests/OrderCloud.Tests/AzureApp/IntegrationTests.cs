@@ -23,13 +23,22 @@ namespace OrderCloud.Tests.AzureApp
 	{
 		[Test]
 		public async Task can_allow_anonymous() {
-			var result = await CreateServer().CreateFlurlClient().Request("test/anon").GetStringAsync();
-			result.Should().Be("hello wide open!");
+			var result = await CreateServer()
+				.CreateFlurlClient()
+				.Request("test/anon")
+				.GetStringAsync();
+
+			result.Should().Be("hello anon!");
 		}
 
 		[Test]
 		public async Task should_deny_access_without_oc_token() {
-			var resp = await CreateServer().CreateFlurlClient().AllowAnyHttpStatus().Request("test/auth").GetAsync();
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.Request("test/shop")
+				.GetAsync();
+
 			resp.StatusCode.Should().Be(401);
 		}
 
@@ -37,12 +46,27 @@ namespace OrderCloud.Tests.AzureApp
 		public async Task can_auth_with_oc_token() {
 			var result = await CreateServer()
 				.CreateFlurlClient()
-				.AllowAnyHttpStatus()
 				.WithFakeOrderCloudToken("mYcLiEnTiD") // check should be case insensitive
-				.Request("test/auth")
+				.Request("test/shop")
 				.GetStringAsync();
 
-			result.Should().Be("hello protected!");
+			result.Should().Be("hello shopper!");
+		}
+
+		[TestCase("test/shop", true)]
+		[TestCase("test/admin", false)]
+		[TestCase("test/either", true)]
+		[TestCase("test/anybody", true)]
+		[TestCase("test/anon", true)]
+		public async Task can_authorize_by_role(string endpoint, bool success) {
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.WithFakeOrderCloudToken("myclientid")
+				.Request(endpoint)
+				.GetAsync();
+
+			resp.StatusCode.Should().Be(success ? 200 : 403);
 		}
 
 		[Test]
@@ -51,7 +75,7 @@ namespace OrderCloud.Tests.AzureApp
 				.CreateFlurlClient()
 				.AllowAnyHttpStatus()
 				.WithFakeOrderCloudToken("wrongid")
-				.Request("test/auth")
+				.Request("test/shop")
 				.GetAsync();
 
 			resp.StatusCode.Should().Be(401);
@@ -98,7 +122,7 @@ namespace OrderCloud.Tests.AzureApp
 
 				// then replace some of them with fakes
 				var oc = Substitute.For<IOrderCloudClient>();
-				oc.Me.GetAsync(Arg.Any<string>()).Returns(new MeUser { Username = "joe" });
+				oc.Me.GetAsync(Arg.Any<string>()).Returns(new MeUser { Username = "joe", AvailableRoles = new[] { "Shopper" } });
 				services.AddSingleton(oc);
 			}
 		}

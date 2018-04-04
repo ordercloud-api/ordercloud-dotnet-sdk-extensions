@@ -12,11 +12,20 @@ namespace SampleApp.WebApi.Controllers
 	[Route("test")]
 	public class TestController : Controller
 	{
-		[HttpGet("auth"), OrderCloudUserAuth]
-		public object Get() => "hello protected!";
+		[HttpGet("shop"), OrderCloudUserAuth(ApiRole.Shopper)]
+		public object Shop() => "hello shopper!";
+
+		[HttpGet("admin"), OrderCloudUserAuth(ApiRole.OrderAdmin)]
+		public object Admin() => "hello admin!";
+
+		[HttpGet("either"), OrderCloudUserAuth(ApiRole.Shopper, ApiRole.OrderAdmin)]
+		public object Either() => "hello either!";
+
+		[HttpGet("anybody"), OrderCloudUserAuth]
+		public object Anybody() => "hello anybody!";
 
 		[HttpGet("anon")]
-		public object GetWithoutAuth() => "hello wide open!";
+		public object Anon() => "hello anon!";
 
 		[Route("webhook"), OrderCloudWebhookAuth]
 		public object HandleAddressSave([FromBody] WebhookPayloads.Addresses.Save<MyConfigData> payload) {
