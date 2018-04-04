@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <Version>0.2.0</Version>
+	  <Version>0.3.0</Version>
 
 	  <PackageId>OrderCloud.AzureApp</PackageId>
 	  <Title>OrderCloud SDK Extensions for Azure App Services</Title>
