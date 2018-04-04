@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Flurl.Http;
+using Flurl.Http.Configuration;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using OrderCloud.AzureApp.Testing;
@@ -23,13 +23,22 @@ namespace OrderCloud.Tests.AzureApp
 	{
 		[Test]
 		public async Task can_allow_anonymous() {
-			var result = await CreateServer().CreateFlurlClient().Request("test/anon").GetStringAsync();
-			result.Should().Be("hello wide open!");
+			var result = await CreateServer()
+				.CreateFlurlClient()
+				.Request("test/anon")
+				.GetStringAsync();
+
+			result.Should().Be("hello anon!");
 		}
 
 		[Test]
 		public async Task should_deny_access_without_oc_token() {
-			var resp = await CreateServer().CreateFlurlClient().AllowAnyHttpStatus().Request("test/auth").GetAsync();
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.Request("test/shop")
+				.GetAsync();
+
 			resp.StatusCode.Should().Be(401);
 		}
 
@@ -37,12 +46,39 @@ namespace OrderCloud.Tests.AzureApp
 		public async Task can_auth_with_oc_token() {
 			var result = await CreateServer()
 				.CreateFlurlClient()
-				.AllowAnyHttpStatus()
-				.WithFakeOrderCloudToken("myclientid")
-				.Request("test/auth")
+				.WithFakeOrderCloudToken("mYcLiEnTiD") // check should be case insensitive
+				.Request("test/shop")
 				.GetStringAsync();
 
-			result.Should().Be("hello protected!");
+			result.Should().Be("hello shopper!");
+		}
+
+		[TestCase("test/shop", true)]
+		[TestCase("test/admin", false)]
+		[TestCase("test/either", true)]
+		[TestCase("test/anybody", true)]
+		[TestCase("test/anon", true)]
+		public async Task can_authorize_by_role(string endpoint, bool success) {
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.WithFakeOrderCloudToken("myclientid")
+				.Request(endpoint)
+				.GetAsync();
+
+			resp.StatusCode.Should().Be(success ? 200 : 403);
+		}
+
+		[Test]
+		public async Task should_deny_access_with_incorrect_client_id() {
+			var resp = await CreateServer()
+				.CreateFlurlClient()
+				.AllowAnyHttpStatus()
+				.WithFakeOrderCloudToken("wrongid")
+				.Request("test/shop")
+				.GetAsync();
+
+			resp.StatusCode.Should().Be(401);
 		}
 
 		[Test]
@@ -86,9 +122,29 @@ namespace OrderCloud.Tests.AzureApp
 
 				// then replace some of them with fakes
 				var oc = Substitute.For<IOrderCloudClient>();
-				oc.Me.GetAsync(Arg.Any<string>()).Returns(new MeUser { Username = "joe" });
+				oc.Me.GetAsync(Arg.Any<string>()).Returns(new MeUser { Username = "joe", AvailableRoles = new[] { "Shopper" } });
 				services.AddSingleton(oc);
 			}
+		}
+	}
+
+	public static class TestServerExtensions
+	{
+		public static IFlurlClient CreateFlurlClient(this TestServer server) {
+			var fc = new FlurlClient(server.BaseAddress.AbsoluteUri);
+			fc.Settings.HttpClientFactory = new TestServerHttpClientFactory(server);
+			return fc;
+		}
+
+		private class TestServerHttpClientFactory : DefaultHttpClientFactory
+		{
+			private readonly TestServer _server;
+
+			public TestServerHttpClientFactory(TestServer server) {
+				_server = server;
+			}
+
+			public override HttpClient CreateHttpClient(HttpMessageHandler handler) => _server.CreateClient();
 		}
 	}
 }

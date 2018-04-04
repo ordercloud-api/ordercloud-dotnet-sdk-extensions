@@ -18,8 +18,11 @@ namespace OrderCloud.AzureApp
 	/// </summary>
 	public class OrderCloudUserAuthAttribute : AuthorizeAttribute
 	{
-		public OrderCloudUserAuthAttribute() {
+		/// <param name="roles">Optional list of roles. If provided, user must have just one of them, otherwise authorization fails.</param>
+		public OrderCloudUserAuthAttribute(params ApiRole[] roles) {
 			AuthenticationSchemes = "OrderCloudUser";
+			if (roles.Any())
+				Roles = string.Join(",", roles);
 		}
 	}
 
@@ -45,7 +48,7 @@ namespace OrderCloud.AzureApp
 				var clientID = jwt.Claims.FirstOrDefault(x => x.Type == "cid")?.Value;
 				if (clientID == null)
 					return AuthenticateResult.Fail("The provided bearer token does not contain a 'cid' (Client ID) claim.");
-				if (!Options.ValidClientIDs.Contains(clientID))
+				if (!Options.ValidClientIDs.Contains(clientID, StringComparer.InvariantCultureIgnoreCase))
 					return AuthenticateResult.Fail("Client ID from token is not valid for this integration.");
 
 				// we've validated the token as much as we can on this end, go make sure it's ok on OC
@@ -55,6 +58,8 @@ namespace OrderCloud.AzureApp
 				cid.AddClaim(new Claim("clientid", clientID));
 				cid.AddClaim(new Claim("accesstoken", token));
 				cid.AddClaim(new Claim("username", user.Username));
+				cid.AddClaims(user.AvailableRoles.Select(r => new Claim(ClaimTypes.Role, r)));
+
 				var anon = jwt.Claims.FirstOrDefault(x => x.Type == "orderid");
 				if (anon != null)
 					cid.AddClaim(new Claim("anonorderid", anon.Value));
