@@ -4,13 +4,11 @@
 
 A set of extensions and helpers for building ASP.NET Core 2.0 API apps and WebJobs, typically hosted in Azure App Services, that integrate with the OrderCloud.io e-commerce platform.
 
-Included components:
-
 ## OrderCloud User Authentication
 
 When a user authenticates and acquires an access token from OrderCloud.io, typically in a front-end web or mobile app, that token can be used in your custom endpoints to verify the user's identity and roles. Here are the steps involved:
 
-1. Register OrderCloud user authentication in your [`Startup`](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/startup) class. You must include one or more OrderCloud.io client IDs identifying your app.
+### 1. Register OrderCloud user authentication in your [`Startup`](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/startup) class. You must include one or more OrderCloud.io client IDs identifying your app.
 
 ```c#
 public virtual void ConfigureServices(IServiceCollection services) {
@@ -21,11 +19,13 @@ public virtual void ConfigureServices(IServiceCollection services) {
 }
 ```
 
-2. Mark any of your controllers or action  methods with `[OrderCloudUserAuth]`, optionally providing one or more required roles.
+#### 2. Mark any of your controllers or action  methods with `[OrderCloudUserAuth]`.
+
+Optionally, You may provide one or more required roles in this attribute, any one of which the user must be assigned in order for authorization to succeed.
 
 ```c#
 [HttpGet]
-[OrderCloudUserAuth(ApiRole.OrderReader, ApiRole.OrderAdmin)] // authorization succeeds when ANY role matches
+[OrderCloudUserAuth(ApiRole.Shopper, ApiRole.OrderReader, ApiRole.OrderAdmin)]
 public Thing Get(string id) {
     ...
 }
@@ -37,7 +37,7 @@ public void Edit([FromBody] Thing thing) {
 }
 ```
 
-3. In your front-end app, anywhere you call one of your custom endpoints, pass the OrderCloud.io access token in a request header:
+#### 3. In your front-end app, anywhere you call one of your custom endpoints, pass the OrderCloud.io access token in a request header.
 
 ```
 Authorization: Bearer my-ordercloud-token
@@ -47,7 +47,9 @@ Authorization: Bearer my-ordercloud-token
 
 One of the most common ways to integrate with OrderCloud.io is via webhooks, where your custom endpoints are called directly by OrderCloud, rather than a user app, when some event occurs within the platform. When you configure a webhook, you provide a secret key that is used by OrderCloud to create a hash of the request body and send it in the `X-oc-hash` header. Your custom endpoint can then check this hash to ensure the authenticity of the call. Here are the steps involved:
 
-1. Register OrderCloud webhook authentication in your [`Startup`](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/startup) class. You must include your secret key here.
+#### 1. Register OrderCloud webhook authentication in your [`Startup`](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/startup) class.
+
+You must include your secret key here.
 
 ```c#
 public virtual void ConfigureServices(IServiceCollection services) {
@@ -58,7 +60,7 @@ public virtual void ConfigureServices(IServiceCollection services) {
 }
 ```
 
-2. Mark any of your controllers or action  methods with `[OrderCloudWebhookAuth]`.
+#### 2. Mark any of your controllers or action  methods with `[OrderCloudWebhookAuth]`.
 
 ```c#
 [Route("webhook")]
@@ -70,7 +72,7 @@ public object HandleAddressSave([FromBody] WebhookPayloads.Addresses.Save<MyConf
 
 Webhook payload types (such as `WebhookPayloads.Addresses.Save` above) are defined in the [OrderCloud.io .NET SDK](https://github.com/ordercloud-api/ordercloud-dotnet-sdk).
 
-3. (Optional) Allow multiple webhooks to use the same endpoint.
+#### 3. (Optional) Allow multiple webhooks to use the same endpoint.
 
 Some developers find it simpler to configure a single endpoint to handle multiple webhooks in OrderCloud.io. However, by default, ASP.NET Core will only allow you to define one action method per route/HTTP verb, otherwise it will throw an `AmbiguousActionException`. So developers often resort to a single action method with ugly switch logic to determine which webhook to handle. `OrderCloud.AzureApp` provides an alternative action selector that inspects the route, HTTP verb, _and_ webhook payload object passed to the method, allowing you to provide an action method per webhook, even if multiple have the same route. Enable this in your `Startup` class:
 
@@ -86,7 +88,7 @@ public virtual void ConfigureServices(IServiceCollection services) {
 
 ## Dependency injection helpers
 
-If you're using [dependency injection](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection), you may find these extension methods useful:
+If you're using [dependency injection](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection), `OrderCloud.AzureApp` provides a few extension methods you might find useful.
 
 `IWebHostBuilder.UseAppSettings<T>` allows you to inject a custom app settings object, populated from any [configuration source](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration), into any service, or even your `Startup` class. This should be called in your `Program` class where you configure the `WebHost`:
 
