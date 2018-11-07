@@ -52,7 +52,7 @@ namespace OrderCloud.AzureApp
 				return false; // none of our ambiguous candidates are specific webhook handlers
 
 			if (ReadWebhookPayload(context, out var verb, out var route)) {
-			    var matchingHandlers = webhookHandlers.Where(h => h.SentOn.Verb.Equals(verb, StringComparison.CurrentCultureIgnoreCase) && h.SentOn.Route == route).ToList();
+			    var matchingHandlers = webhookHandlers.Where(h => h.SentOn.Verb.Equals(verb, StringComparison.OrdinalIgnoreCase) && h.SentOn.Route == route).ToList();
 				if (matchingHandlers.Count == 1) {
 					// found exactly 1 matching webhook handler. woo!
 					result = matchingHandlers[0].Action;
